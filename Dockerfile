@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     curl \
     ca-certificates \
+    unzip \
     && curl -fsSL https://deno.land/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
 
@@ -22,3 +23,4 @@ RUN pip install -U pip \
     && pip install --no-cache-dir -r requirements.txt
 
 CMD ["bash", "start"]
+
