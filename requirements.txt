@@ -13,7 +13,7 @@ motor
 pillow
 psutil
 py-tgcalls==2.2.8
-pyrofork
+TgCrypto
 python-dotenv
 pyyaml
 requests
@@ -22,7 +22,8 @@ spotipy
 unidecode
 yt-dlp
 youtube-search
-youtube-search-python
+git+https://github.com/BillaSpace/youtube-search-python.git
 flask_restful
 flask
 gunicorn
+pyrotgfork
