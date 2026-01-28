@@ -100,8 +100,30 @@ def cobalt_api_dl(video_id: str, audio_only: bool = True) -> str:
         print(f"Cobalt API error: {e}")
     return None
 
+# VPS YouTube API - primary source
+VPS_API_URL = "http://94.232.247.215:7860"
+
+def vps_api_dl(video_id: str) -> str:
+    """Use VPS API to get audio stream URL - most reliable"""
+    try:
+        api_url = f"{VPS_API_URL}/yt/stream/{video_id}"
+        response = requests.get(api_url, timeout=30)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "ok" and data.get("url"):
+                print(f"VPS API success!")
+                return data.get("url")
+    except Exception as e:
+        print(f"VPS API error: {e}")
+    return None
+
 def apii_dl(video_id: str) -> str:
-    # Try Piped API first (most reliable for cloud)
+    # Try VPS API first (most reliable - uses VPS IP)
+    stream_url = vps_api_dl(video_id)
+    if stream_url:
+        return stream_url
+    
+    # Try Piped API
     stream_url = piped_api_dl(video_id)
     if stream_url:
         return stream_url
@@ -420,7 +442,18 @@ class YouTubeAPI:
                 return await loop.run_in_executor(None, task_func)
 
         def audio_dl():
-            # Try Piped API first (most reliable for cloud servers)
+            # Try VPS API first (most reliable - VPS IP not blocked)
+            try:
+                video_id = extract_video_id(link)
+                if video_id:
+                    vps_url = vps_api_dl(video_id)
+                    if vps_url:
+                        print(f"Using VPS API stream URL")
+                        return vps_url
+            except Exception as e:
+                print(f"VPS API failed: {e}")
+            
+            # Try Piped API
             try:
                 video_id = extract_video_id(link)
                 if video_id:
