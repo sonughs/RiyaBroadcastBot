@@ -102,6 +102,36 @@ def cobalt_api_dl(video_id: str, audio_only: bool = True) -> str:
 
 # VPS YouTube API - primary source
 VPS_API_URL = "http://94.232.247.215:7860"
+# Custom YouTube API - NO yt-dlp, NO cookies!
+CUSTOM_API_URL = "http://94.232.247.215:7861"
+
+def custom_api_dl(video_id: str) -> str:
+    """Use Custom API (no yt-dlp) to get direct audio stream URL"""
+    try:
+        api_url = f"{CUSTOM_API_URL}/api/audio/{video_id}"
+        response = requests.get(api_url, timeout=30)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "ok" and data.get("url"):
+                print(f"Custom API success (no yt-dlp): {video_id}")
+                return data.get("url")
+    except Exception as e:
+        print(f"Custom API error: {e}")
+    return None
+
+def custom_video_api_dl(video_id: str) -> str:
+    """Use Custom API (no yt-dlp) to get direct video stream URL"""
+    try:
+        api_url = f"{CUSTOM_API_URL}/api/video/{video_id}"
+        response = requests.get(api_url, timeout=30)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "ok" and data.get("url"):
+                print(f"Custom Video API success (no yt-dlp): {video_id}")
+                return data.get("url")
+    except Exception as e:
+        print(f"Custom Video API error: {e}")
+    return None
 
 def vps_api_dl(video_id: str) -> str:
     """Use VPS API to download audio file - most reliable"""
@@ -156,7 +186,12 @@ def vps_video_dl(video_id: str) -> str:
     return None
 
 def apii_dl(video_id: str) -> str:
-    # Try VPS API first (most reliable - uses VPS IP)
+    # Try Custom API first (NO yt-dlp - direct stream URL)
+    stream_url = custom_api_dl(video_id)
+    if stream_url:
+        return stream_url
+    
+    # Try VPS API (uses yt-dlp on VPS)
     file_path = vps_api_dl(video_id)
     if file_path:
         return file_path
@@ -345,9 +380,16 @@ class YouTubeAPI:
 
         try:
             video_id = extract_video_id(link)
-            api_path = api_video_dl(video_id)
+            
+            # Try Custom API first (NO yt-dlp - direct stream URL)
+            stream_url = custom_video_api_dl(video_id)
+            if stream_url:
+                return 1, stream_url
+            
+            # Try VPS API
+            api_path = vps_video_dl(video_id)
             if api_path:
-                return 1, f"downloads/{video_id}.mp4"
+                return 1, api_path
         except Exception:
             pass
 
