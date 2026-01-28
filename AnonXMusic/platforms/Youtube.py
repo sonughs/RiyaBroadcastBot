@@ -104,24 +104,36 @@ def cobalt_api_dl(video_id: str, audio_only: bool = True) -> str:
 VPS_API_URL = "http://94.232.247.215:7860"
 
 def vps_api_dl(video_id: str) -> str:
-    """Use VPS API to get audio stream URL - most reliable"""
+    """Use VPS API to download audio file - most reliable"""
     try:
-        api_url = f"{VPS_API_URL}/yt/stream/{video_id}"
-        response = requests.get(api_url, timeout=30)
+        # Download file from VPS API
+        api_url = f"{VPS_API_URL}/yt/download/{video_id}"
+        file_path = os.path.join("downloads", f"{video_id}.mp3")
+        
+        # Return cached if exists
+        if os.path.exists(file_path):
+            return file_path
+        
+        os.makedirs("downloads", exist_ok=True)
+        response = requests.get(api_url, timeout=120, stream=True)
         if response.status_code == 200:
-            data = response.json()
-            if data.get("status") == "ok" and data.get("url"):
-                print(f"VPS API success!")
-                return data.get("url")
+            content_type = response.headers.get('content-type', '')
+            if 'audio' in content_type or 'octet-stream' in content_type or len(response.content) > 10000:
+                with open(file_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                if os.path.exists(file_path) and os.path.getsize(file_path) > 10000:
+                    print(f"VPS API download success: {file_path}")
+                    return file_path
     except Exception as e:
         print(f"VPS API error: {e}")
     return None
 
 def apii_dl(video_id: str) -> str:
     # Try VPS API first (most reliable - uses VPS IP)
-    stream_url = vps_api_dl(video_id)
-    if stream_url:
-        return stream_url
+    file_path = vps_api_dl(video_id)
+    if file_path:
+        return file_path
     
     # Try Piped API
     stream_url = piped_api_dl(video_id)
@@ -442,37 +454,16 @@ class YouTubeAPI:
                 return await loop.run_in_executor(None, task_func)
 
         def audio_dl():
-            # Try VPS API first (most reliable - VPS IP not blocked)
+            # Try VPS API first (most reliable - downloads file via VPS)
             try:
                 video_id = extract_video_id(link)
                 if video_id:
-                    vps_url = vps_api_dl(video_id)
-                    if vps_url:
-                        print(f"Using VPS API stream URL")
-                        return vps_url
+                    vps_file = vps_api_dl(video_id)
+                    if vps_file and os.path.exists(vps_file):
+                        print(f"Using VPS API downloaded file: {vps_file}")
+                        return vps_file
             except Exception as e:
                 print(f"VPS API failed: {e}")
-            
-            # Try Piped API
-            try:
-                video_id = extract_video_id(link)
-                if video_id:
-                    piped_url = piped_api_dl(video_id)
-                    if piped_url:
-                        print(f"Using Piped stream URL")
-                        return piped_url
-            except Exception as e:
-                print(f"Piped API failed: {e}")
-            
-            # Try cobalt API 
-            try:
-                video_id = extract_video_id(link)
-                if video_id:
-                    cobalt_url = cobalt_api_dl(video_id)
-                    if cobalt_url:
-                        return cobalt_url
-            except Exception as e:
-                print(f"Cobalt API failed: {e}")
             
             # Try apii_dl as fallback
             try:
