@@ -100,10 +100,8 @@ def cobalt_api_dl(video_id: str, audio_only: bool = True) -> str:
         print(f"Cobalt API error: {e}")
     return None
 
-# VPS YouTube API - primary source
-VPS_API_URL = "http://94.232.247.215:7860"
 # Custom YouTube API - NO yt-dlp, NO cookies!
-CUSTOM_API_URL = "http://94.232.247.215:7861"
+CUSTOM_API_URL = "http://94.232.247.215:7860"
 
 def custom_api_dl(video_id: str) -> str:
     """Use Custom API (no yt-dlp) to get direct audio stream URL"""
@@ -133,75 +131,18 @@ def custom_video_api_dl(video_id: str) -> str:
         print(f"Custom Video API error: {e}")
     return None
 
-def vps_api_dl(video_id: str) -> str:
-    """Use VPS API to download audio file - most reliable"""
-    try:
-        # Download file from VPS API
-        api_url = f"{VPS_API_URL}/yt/download/{video_id}"
-        file_path = os.path.join("downloads", f"{video_id}.mp3")
-        
-        # Return cached if exists
-        if os.path.exists(file_path):
-            return file_path
-        
-        os.makedirs("downloads", exist_ok=True)
-        response = requests.get(api_url, timeout=120, stream=True)
-        if response.status_code == 200:
-            content_type = response.headers.get('content-type', '')
-            if 'audio' in content_type or 'octet-stream' in content_type or len(response.content) > 10000:
-                with open(file_path, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
-                if os.path.exists(file_path) and os.path.getsize(file_path) > 10000:
-                    print(f"VPS API download success: {file_path}")
-                    return file_path
-    except Exception as e:
-        print(f"VPS API error: {e}")
-    return None
-
-def vps_video_dl(video_id: str) -> str:
-    """Use VPS API to download video file - most reliable"""
-    try:
-        # Download video from VPS API
-        api_url = f"{VPS_API_URL}/yt/video/{video_id}"
-        file_path = os.path.join("downloads", f"{video_id}.mp4")
-        
-        # Return cached if exists
-        if os.path.exists(file_path):
-            return file_path
-        
-        os.makedirs("downloads", exist_ok=True)
-        response = requests.get(api_url, timeout=180, stream=True)
-        if response.status_code == 200:
-            content_type = response.headers.get('content-type', '')
-            if 'video' in content_type or 'octet-stream' in content_type:
-                with open(file_path, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
-                if os.path.exists(file_path) and os.path.getsize(file_path) > 100000:
-                    print(f"VPS API video download success: {file_path}")
-                    return file_path
-    except Exception as e:
-        print(f"VPS video API error: {e}")
-    return None
-
 def apii_dl(video_id: str) -> str:
     # Try Custom API first (NO yt-dlp - direct stream URL)
     stream_url = custom_api_dl(video_id)
     if stream_url:
         return stream_url
     
-    # Try VPS API (uses yt-dlp on VPS)
-    file_path = vps_api_dl(video_id)
-    if file_path:
-        return file_path
-    
-    # Try Piped API
+    # Try Piped API as fallback
     stream_url = piped_api_dl(video_id)
     if stream_url:
         return stream_url
     
-    # Try cobalt API
+    # Try cobalt API as fallback
     stream_url = cobalt_api_dl(video_id)
     if stream_url:
         return stream_url
@@ -381,15 +322,10 @@ class YouTubeAPI:
         try:
             video_id = extract_video_id(link)
             
-            # Try Custom API first (NO yt-dlp - direct stream URL)
+            # Try Custom API (NO yt-dlp - direct stream URL)
             stream_url = custom_video_api_dl(video_id)
             if stream_url:
                 return 1, stream_url
-            
-            # Try VPS API
-            api_path = vps_video_dl(video_id)
-            if api_path:
-                return 1, api_path
         except Exception:
             pass
 
