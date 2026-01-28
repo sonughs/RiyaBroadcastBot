@@ -129,6 +129,32 @@ def vps_api_dl(video_id: str) -> str:
         print(f"VPS API error: {e}")
     return None
 
+def vps_video_dl(video_id: str) -> str:
+    """Use VPS API to download video file - most reliable"""
+    try:
+        # Download video from VPS API
+        api_url = f"{VPS_API_URL}/yt/video/{video_id}"
+        file_path = os.path.join("downloads", f"{video_id}.mp4")
+        
+        # Return cached if exists
+        if os.path.exists(file_path):
+            return file_path
+        
+        os.makedirs("downloads", exist_ok=True)
+        response = requests.get(api_url, timeout=180, stream=True)
+        if response.status_code == 200:
+            content_type = response.headers.get('content-type', '')
+            if 'video' in content_type or 'octet-stream' in content_type:
+                with open(file_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                if os.path.exists(file_path) and os.path.getsize(file_path) > 100000:
+                    print(f"VPS API video download success: {file_path}")
+                    return file_path
+    except Exception as e:
+        print(f"VPS video API error: {e}")
+    return None
+
 def apii_dl(video_id: str) -> str:
     # Try VPS API first (most reliable - uses VPS IP)
     file_path = vps_api_dl(video_id)
@@ -506,26 +532,16 @@ class YouTubeAPI:
             return xyz
 
         def video_dl():
-            # Try Piped API first (most reliable for cloud servers)
+            # Try VPS API first (most reliable - VPS IP not blocked)
             try:
                 sexid = extract_video_id(link)
                 if sexid:
-                    piped_url = piped_api_dl(sexid, audio_only=False)
-                    if piped_url:
-                        print(f"Using Piped video stream URL")
-                        return piped_url
+                    vps_file = vps_video_dl(sexid)
+                    if vps_file and os.path.exists(vps_file):
+                        print(f"Using VPS API downloaded video: {vps_file}")
+                        return vps_file
             except Exception as e:
-                print(f"Piped video API failed: {e}")
-            
-            # Try cobalt API
-            try:
-                sexid = extract_video_id(link)
-                if sexid:
-                    cobalt_url = cobalt_api_dl(sexid, audio_only=False)
-                    if cobalt_url:
-                        return cobalt_url
-            except Exception as e:
-                print(f"Cobalt video API failed: {e}")
+                print(f"VPS video API failed: {e}")
             
             try:
                 sexid = extract_video_id(link)
