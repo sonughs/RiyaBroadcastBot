@@ -104,34 +104,29 @@ def cobalt_api_dl(video_id: str, audio_only: bool = True) -> str:
 CUSTOM_API_URL = "http://94.232.247.215:7860"
 
 def custom_api_dl(video_id: str) -> str:
-    """Use Custom API proxy stream (VPS proxies YouTube audio)"""
+    """Use Custom API to get direct YouTube audio stream URL"""
     try:
-        # Use proxy stream endpoint - VPS fetches from YouTube and streams to bot
-        proxy_url = f"{CUSTOM_API_URL}/api/stream/audio/{video_id}"
-        # Verify it works first
         api_url = f"{CUSTOM_API_URL}/api/audio/{video_id}"
         response = requests.get(api_url, timeout=30)
         if response.status_code == 200:
             data = response.json()
-            if data.get("status") == "ok":
-                print(f"Custom API proxy stream: {video_id}")
-                return proxy_url  # Return proxy URL instead of direct YouTube URL
+            if data.get("status") == "ok" and data.get("url"):
+                print(f"Custom API success: {video_id}")
+                return data.get("url")  # Return direct YouTube URL
     except Exception as e:
         print(f"Custom API error: {e}")
     return None
 
 def custom_video_api_dl(video_id: str) -> str:
-    """Use Custom API proxy stream for video"""
+    """Use Custom API to get direct YouTube video stream URL"""
     try:
-        # Use proxy stream endpoint
-        proxy_url = f"{CUSTOM_API_URL}/api/stream/video/{video_id}"
         api_url = f"{CUSTOM_API_URL}/api/video/{video_id}"
         response = requests.get(api_url, timeout=30)
         if response.status_code == 200:
             data = response.json()
-            if data.get("status") == "ok":
-                print(f"Custom Video API proxy stream: {video_id}")
-                return proxy_url  # Return proxy URL
+            if data.get("status") == "ok" and data.get("url"):
+                print(f"Custom Video API success: {video_id}")
+                return data.get("url")  # Return direct YouTube URL
     except Exception as e:
         print(f"Custom Video API error: {e}")
     return None
