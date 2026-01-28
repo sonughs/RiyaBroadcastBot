@@ -33,7 +33,38 @@ def extract_video_id(link: str) -> str:
 
     raise ValueError("Invalid YouTube link provided.")
 
+def cobalt_api_dl(video_id: str, audio_only: bool = True) -> str:
+    """Use cobalt.tools API to get audio/video stream URL"""
+    try:
+        url = f"https://www.youtube.com/watch?v={video_id}"
+        api_url = "https://api.cobalt.tools/api/json"
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "url": url,
+            "isAudioOnly": audio_only,
+            "aFormat": "mp3",
+            "vQuality": "720",
+            "filenamePattern": "basic",
+        }
+        response = requests.post(api_url, json=payload, headers=headers, timeout=30)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "stream" or data.get("status") == "redirect":
+                return data.get("url")
+    except Exception as e:
+        print(f"Cobalt API error: {e}")
+    return None
+
 def apii_dl(video_id: str) -> str:
+    # Try cobalt API first
+    stream_url = cobalt_api_dl(video_id)
+    if stream_url:
+        return stream_url
+    
+    # Fallback to original API
     api_url = f"{API_URL}/yt/id?vid={video_id}&format=mp3&direct"
     file_path = os.path.join("downloads", f"{video_id}.mp3")
 
@@ -342,6 +373,27 @@ class YouTubeAPI:
                 return await loop.run_in_executor(None, task_func)
 
         def audio_dl():
+            # Try cobalt API first (works on cloud servers)
+            try:
+                video_id = extract_video_id(link)
+                if video_id:
+                    cobalt_url = cobalt_api_dl(video_id)
+                    if cobalt_url:
+                        return cobalt_url
+            except Exception as e:
+                print(f"Cobalt API failed: {e}")
+            
+            # Try apii_dl as fallback
+            try:
+                video_id = extract_video_id(link)
+                if video_id:
+                    api_url = apii_dl(video_id)
+                    if api_url:
+                        return api_url
+            except Exception as e:
+                print(f"API fallback failed: {e}")
+            
+            # Last resort: yt-dlp
             ydl_optssx = {
                 "format": "bestaudio/best",
                 "outtmpl": "downloads/%(id)s.%(ext)s",
@@ -372,6 +424,16 @@ class YouTubeAPI:
             return xyz
 
         def video_dl():
+            # Try cobalt API first (works on cloud servers)
+            try:
+                sexid = extract_video_id(link)
+                if sexid:
+                    cobalt_url = cobalt_api_dl(sexid, audio_only=False)
+                    if cobalt_url:
+                        return cobalt_url
+            except Exception as e:
+                print(f"Cobalt video API failed: {e}")
+            
             try:
                 sexid = extract_video_id(link)
                 path = api_video_dl(sexid)
