@@ -1,0 +1,38 @@
+[28-Jan-26 19:59:10 - INFO] - AnonXMusic.core.mongo - Connecting to your Mongo Database...
+[28-Jan-26 19:59:14 - INFO] - AnonXMusic.core.mongo - Connected to your Mongo Database.
+[28-Jan-26 19:59:14 - INFO] - AnonXMusic.core.dir - Directories Updated.
+[28-Jan-26 19:59:14 - INFO] - AnonXMusic.core.git - Git Client Found [VPS DEPLOYER]
+[28-Jan-26 19:59:14 - INFO] - AnonXMusic.misc - Local Database Initialized.
+[28-Jan-26 19:59:14 - INFO] - AnonXMusic.core.bot - Starting Bot...
+[28-Jan-26 19:59:15 - INFO] - AnonXMusic.misc - Sudoers Loaded.
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/root/RIYAxMUZIC/AnonXMusic/__main__.py", line 69, in <module>
+    asyncio.get_event_loop().run_until_complete(init())
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/root/RIYAxMUZIC/AnonXMusic/__main__.py", line 39, in init
+    await app.start()
+  File "/root/RIYAxMUZIC/AnonXMusic/core/bot.py", line 25, in start
+    await super().start()
+  File "/usr/local/lib/python3.12/dist-packages/pyrogram/methods/utilities/start.py", line 62, in start
+    await self.authorize()
+  File "/usr/local/lib/python3.12/dist-packages/pyrogram/client.py", line 406, in authorize
+    return await self.sign_in_bot(self.bot_token)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/pyrogram/methods/auth/sign_in_bot.py", line 51, in sign_in_bot
+    r = await self.invoke(
+        ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/pyrogram/methods/advanced/invoke.py", line 82, in invoke
+    r = await self.session.invoke(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/pyrogram/session/session.py", line 415, in invoke
+    return await self.send(query, timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/pyrogram/session/session.py", line 383, in send
+    RPCError.raise_it(result, type(data))
+  File "/usr/local/lib/python3.12/dist-packages/pyrogram/errors/rpc_error.py", line 107, in raise_it
+    raise getattr(
+pyrogram.errors.exceptions.flood_420.FloodWait: Telegram says: [420 FLOOD_WAIT_X] (caused by "auth.ImportBotAuthorization") Pyrogram 2.2.17 thinks: Please wait 1225 seconds before repeating the action.

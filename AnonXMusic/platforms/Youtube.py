@@ -34,14 +34,14 @@ def extract_video_id(link: str) -> str:
     raise ValueError("Invalid YouTube link provided.")
 
 def apii_dl(video_id: str) -> str:
-    api_url = f"{API_URL}/arytmp3?direct&id={video_id}"
+    api_url = f"{API_URL}/yt/id?vid={video_id}&format=mp3&direct"
     file_path = os.path.join("downloads", f"{video_id}.mp3")
 
     if os.path.exists(file_path):
         return file_path
 
-    response = requests.get(api_url, stream=True)
-    if response.status_code == 200:
+    response = requests.get(api_url, stream=True, timeout=60)
+    if response.status_code == 200 and len(response.content) > 1000:
         os.makedirs("downloads", exist_ok=True)
         with open(file_path, 'wb') as f:
             for chunk in response.iter_content(chunk_size=8192):
@@ -50,55 +50,20 @@ def apii_dl(video_id: str) -> str:
     return None
 
 def api_dl(video_id: str) -> str:
-    api_url = f"{API_URL}/yt?id={video_id}&format=mp3&direct"
-    file_path = os.path.join("downloads", f"{video_id}.mp3")
-
-    if os.path.exists(file_path):
-        return file_path
-
-    try:
-        with requests.get(api_url, stream=True) as response:
-            if response.status_code == 200:
-                os.makedirs("downloads", exist_ok=True)
-                with open(file_path, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
-                return file_path
-    except requests.RequestException:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-    return None
+    # Use API for audio download
+    return apii_dl(video_id)
 
 def api_video_dl(video_id: str) -> str:
-    api_url = f"{API_URL}/yt?id={video_id}&format=mp4&direct"
-    file_path = os.path.join("downloads", f"{video_id}.mp4")
-
-    if os.path.exists(file_path):
-        return file_path
-
-    try:
-        with requests.get(api_url, stream=True) as response:
-            if response.status_code == 200:
-                os.makedirs("downloads", exist_ok=True)
-                with open(file_path, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
-                return file_path
-    except requests.RequestException:
-        if os.path.exists(file_path):
-            os.remove(file_path)
+    # Skip API download - it's not working, use yt-dlp instead
     return None
 
 def cookie_txt_file():
     folder_path = f"{os.getcwd()}/cookies"
-    filename = f"{os.getcwd()}/cookies/logs.csv"
     txt_files = glob.glob(os.path.join(folder_path, '*.txt'))
     if not txt_files:
-        raise FileNotFoundError("No .txt files found in the specified folder.")
-    cookie_txt_file = random.choice(txt_files)
-    with open(filename, 'a') as file:
-        file.write(f'Choosen File : {cookie_txt_file}\n')
-    return f"""cookies/{str(cookie_txt_file).split("/")[-1]}"""
+        return None  # Return None instead of raising error
+    cookie_file = random.choice(txt_files)
+    return cookie_file
 
 async def check_file_size(link):
     async def get_format_info(link):
@@ -377,22 +342,18 @@ class YouTubeAPI:
                 return await loop.run_in_executor(None, task_func)
 
         def audio_dl():
-            try:
-                sexid = extract_video_id(link)
-                path = api_dl(sexid)
-                if path:
-                    return path
-            except:
-                pass
             ydl_optssx = {
                 "format": "bestaudio/best",
                 "outtmpl": "downloads/%(id)s.%(ext)s",
                 "geo_bypass": True,
                 "nocheckcertificate": True,
                 "quiet": True,
-                "cookiefile": cookie_txt_file(),
                 "no_warnings": True,
+                "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
             }
+            cookie_file = cookie_txt_file()
+            if cookie_file:
+                ydl_optssx["cookiefile"] = cookie_file
             x = yt_dlp.YoutubeDL(ydl_optssx)
             info = x.extract_info(link, False)
             xyz = os.path.join("downloads", f"{info['id']}.{info['ext']}")
@@ -415,9 +376,11 @@ class YouTubeAPI:
                 "geo_bypass": True,
                 "nocheckcertificate": True,
                 "quiet": True,
-                "cookiefile": cookie_txt_file(),
                 "no_warnings": True,
             }
+            cookie_file = cookie_txt_file()
+            if cookie_file:
+                ydl_optssx["cookiefile"] = cookie_file
             x = yt_dlp.YoutubeDL(ydl_optssx)
             info = x.extract_info(link, False)
             xyz = os.path.join("downloads", f"{info['id']}.{info['ext']}")
