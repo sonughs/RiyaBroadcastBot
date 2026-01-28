@@ -356,6 +356,15 @@ class YouTubeAPI:
                 ydl_optssx["cookiefile"] = cookie_file
             x = yt_dlp.YoutubeDL(ydl_optssx)
             info = x.extract_info(link, False)
+            # Return direct stream URL instead of downloading
+            if info and info.get('url'):
+                return info['url']
+            # Fallback: try to get URL from formats
+            if info and info.get('formats'):
+                for fmt in info['formats']:
+                    if fmt.get('acodec') != 'none' and fmt.get('url'):
+                        return fmt['url']
+            # Last fallback: download file
             xyz = os.path.join("downloads", f"{info['id']}.{info['ext']}")
             if os.path.exists(xyz):
                 return xyz
