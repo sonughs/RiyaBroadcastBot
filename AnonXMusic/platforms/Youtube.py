@@ -33,6 +33,48 @@ def extract_video_id(link: str) -> str:
 
     raise ValueError("Invalid YouTube link provided.")
 
+def piped_api_dl(video_id: str, audio_only: bool = True) -> str:
+    """Use Piped API instances to get audio/video stream URL"""
+    # List of working Piped instances
+    piped_instances = [
+        "https://pipedapi.kavin.rocks",
+        "https://pipedapi.adminforge.de", 
+        "https://api.piped.yt",
+        "https://pipedapi.in.projectsegfau.lt",
+    ]
+    
+    for instance in piped_instances:
+        try:
+            api_url = f"{instance}/streams/{video_id}"
+            response = requests.get(api_url, timeout=15)
+            if response.status_code == 200:
+                data = response.json()
+                if audio_only:
+                    # Get best audio stream
+                    audio_streams = data.get("audioStreams", [])
+                    if audio_streams:
+                        # Sort by bitrate and get highest quality
+                        best = max(audio_streams, key=lambda x: x.get("bitrate", 0))
+                        stream_url = best.get("url")
+                        if stream_url:
+                            print(f"Piped API success: {instance}")
+                            return stream_url
+                else:
+                    # Get video stream
+                    video_streams = data.get("videoStreams", [])
+                    if video_streams:
+                        # Get 720p or closest
+                        for vs in video_streams:
+                            if vs.get("quality") == "720p" and vs.get("url"):
+                                return vs.get("url")
+                        # Fallback to any video
+                        if video_streams[0].get("url"):
+                            return video_streams[0].get("url")
+        except Exception as e:
+            print(f"Piped instance {instance} failed: {e}")
+            continue
+    return None
+
 def cobalt_api_dl(video_id: str, audio_only: bool = True) -> str:
     """Use cobalt.tools API to get audio/video stream URL"""
     try:
@@ -59,7 +101,12 @@ def cobalt_api_dl(video_id: str, audio_only: bool = True) -> str:
     return None
 
 def apii_dl(video_id: str) -> str:
-    # Try cobalt API first
+    # Try Piped API first (most reliable for cloud)
+    stream_url = piped_api_dl(video_id)
+    if stream_url:
+        return stream_url
+    
+    # Try cobalt API
     stream_url = cobalt_api_dl(video_id)
     if stream_url:
         return stream_url
@@ -373,7 +420,18 @@ class YouTubeAPI:
                 return await loop.run_in_executor(None, task_func)
 
         def audio_dl():
-            # Try cobalt API first (works on cloud servers)
+            # Try Piped API first (most reliable for cloud servers)
+            try:
+                video_id = extract_video_id(link)
+                if video_id:
+                    piped_url = piped_api_dl(video_id)
+                    if piped_url:
+                        print(f"Using Piped stream URL")
+                        return piped_url
+            except Exception as e:
+                print(f"Piped API failed: {e}")
+            
+            # Try cobalt API 
             try:
                 video_id = extract_video_id(link)
                 if video_id:
@@ -424,7 +482,18 @@ class YouTubeAPI:
             return xyz
 
         def video_dl():
-            # Try cobalt API first (works on cloud servers)
+            # Try Piped API first (most reliable for cloud servers)
+            try:
+                sexid = extract_video_id(link)
+                if sexid:
+                    piped_url = piped_api_dl(sexid, audio_only=False)
+                    if piped_url:
+                        print(f"Using Piped video stream URL")
+                        return piped_url
+            except Exception as e:
+                print(f"Piped video API failed: {e}")
+            
+            # Try cobalt API
             try:
                 sexid = extract_video_id(link)
                 if sexid:
