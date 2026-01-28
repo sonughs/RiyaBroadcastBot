@@ -458,18 +458,18 @@ class YouTubeAPI:
                 return await loop.run_in_executor(None, task_func)
 
         def audio_dl():
-            # Try VPS API first (most reliable - downloads file via VPS)
+            # Try Custom API first (NO yt-dlp - direct stream URL)
             try:
                 video_id = extract_video_id(link)
                 if video_id:
-                    vps_file = vps_api_dl(video_id)
-                    if vps_file and os.path.exists(vps_file):
-                        print(f"Using VPS API downloaded file: {vps_file}")
-                        return vps_file
+                    stream_url = custom_api_dl(video_id)
+                    if stream_url:
+                        print(f"Using Custom API stream: {video_id}")
+                        return stream_url
             except Exception as e:
-                print(f"VPS API failed: {e}")
+                print(f"Custom API failed: {e}")
             
-            # Try apii_dl as fallback
+            # Try apii_dl as fallback (Piped, Cobalt)
             try:
                 video_id = extract_video_id(link)
                 if video_id:
@@ -510,16 +510,16 @@ class YouTubeAPI:
             return xyz
 
         def video_dl():
-            # Try VPS API first (most reliable - VPS IP not blocked)
+            # Try Custom API first (NO yt-dlp - direct stream URL)
             try:
-                sexid = extract_video_id(link)
-                if sexid:
-                    vps_file = vps_video_dl(sexid)
-                    if vps_file and os.path.exists(vps_file):
-                        print(f"Using VPS API downloaded video: {vps_file}")
-                        return vps_file
+                video_id = extract_video_id(link)
+                if video_id:
+                    stream_url = custom_video_api_dl(video_id)
+                    if stream_url:
+                        print(f"Using Custom API video stream: {video_id}")
+                        return stream_url
             except Exception as e:
-                print(f"VPS video API failed: {e}")
+                print(f"Custom Video API failed: {e}")
             
             try:
                 sexid = extract_video_id(link)
