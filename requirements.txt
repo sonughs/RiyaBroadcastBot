@@ -8,7 +8,7 @@ ffmpeg-python
 gitpython
 hachoir
 heroku3
-httpx
+httpx==0.24.1
 motor
 pillow
 psutil
@@ -21,8 +21,7 @@ speedtest-cli
 spotipy
 unidecode
 yt-dlp
-youtube-search
-git+https://github.com/BillaSpace/youtube-search-python.git
+youtube-search-python
 flask_restful
 flask
 gunicorn
